@@ -265,7 +265,7 @@ namespace prj
 			if (!out.sources_size)
 				luaL_error(L, "sources cannot be empty");
 
-			if (in.compile_options_size || in.includes_size)
+			if (in.compile_options_size || in.includes_size || in.ext_includes_size)
 			{
 				uint32_t compile_options_str_size {0};
 				uint32_t compile_options_str_capacity {0};
@@ -289,7 +289,8 @@ namespace prj
 					strncpy(compile_options + compile_options_str_size,
 					        in.compile_options[i], len);
 					compile_options_str_size += len;
-					if (in.includes_size || i < in.compile_options_size - 1)
+					if (in.includes_size || in.ext_includes_size ||
+					    i < in.compile_options_size - 1)
 					{
 						strncpy(compile_options + compile_options_str_size, " ", 1);
 						compile_options_str_size += 1;
@@ -345,7 +346,88 @@ namespace prj
 						tfree(include);
 					}
 
-					if (i < in.includes_size - 1)
+					if (in.ext_includes_size || i < in.includes_size - 1)
+					{
+						if (compile_options_str_capacity < compile_options_str_size + 2)
+						{
+							while (compile_options_str_capacity <
+							       compile_options_str_size + 2)
+								compile_options_str_capacity *= 2;
+
+							compile_options = trealloc(compile_options,
+							                           compile_options_str_capacity + 1);
+						}
+						strncpy(compile_options + compile_options_str_size, "\" ", 2);
+						compile_options_str_size += 2;
+					}
+					else
+					{
+						if (compile_options_str_capacity < compile_options_str_size + 1)
+						{
+							while (compile_options_str_capacity <
+							       compile_options_str_size + 1)
+								compile_options_str_capacity *= 1;
+
+							compile_options = trealloc(compile_options,
+							                           compile_options_str_capacity + 1);
+						}
+						strncpy(compile_options + compile_options_str_size, "\"", 1);
+						compile_options_str_size += 1;
+					}
+				}
+
+				for (uint32_t i {0}; i < in.ext_includes_size; ++i)
+				{
+					uint32_t len {static_cast<uint32_t>(strlen(in.ext_includes[i]))};
+					if (fs::is_absolute(in.ext_includes[i]))
+					{
+						if (compile_options_str_capacity <
+						    compile_options_str_size + len + 3)
+						{
+							if (!compile_options_str_capacity)
+								compile_options_str_capacity = len + 3;
+
+							while (compile_options_str_capacity <
+							       compile_options_str_size + len + 3)
+								compile_options_str_capacity *= 2;
+
+							compile_options = trealloc(compile_options,
+							                           compile_options_str_capacity + 1);
+						}
+						strncpy(compile_options + compile_options_str_size, "-isystem\"",
+						        9);
+						compile_options_str_size += 9;
+						strncpy(compile_options + compile_options_str_size,
+						        in.ext_includes[i], len);
+						compile_options_str_size += len;
+					}
+					else
+					{
+						char const* include =
+							lua::resolve_path_from_script(L, in.ext_includes[i], len);
+						len = strlen(include);
+						if (compile_options_str_capacity <
+						    compile_options_str_size + len + 6)
+						{
+							if (!compile_options_str_capacity)
+								compile_options_str_capacity = len + 6;
+
+							while (compile_options_str_capacity <
+							       compile_options_str_size + len + 6)
+								compile_options_str_capacity *= 2;
+
+							compile_options = trealloc(compile_options,
+							                           compile_options_str_capacity + 1);
+						}
+						strncpy(compile_options + compile_options_str_size,
+						        "-isystem\"../", 12);
+						compile_options_str_size += 12;
+						strncpy(compile_options + compile_options_str_size, include, len);
+						compile_options_str_size += len;
+						tfree(include);
+					}
+
+					if (in.ext_includes_size || i < in.ext_includes_size - 1)
 					{
 						if (compile_options_str_capacity < compile_options_str_size + 2)
 						{

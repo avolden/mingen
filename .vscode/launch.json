@@ -45,7 +45,7 @@
 			"program": "${workspaceFolder}/bin/mingen",
 			"args": [
 				"-d",
-				"tests"
+				"/Users/aubin/Dev/Sources/vulkanbox/"
 			],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}",
@@ -70,6 +70,19 @@
 			"environment": [],
 			// "console": "integratedTerminal",
 			"preLaunchTask": "build linux"
-		}
+		},
+		{
+			"name": "(Mac) Launch debug",
+			"type": "lldb-dap",
+			"request": "launch",
+			"program": "${workspaceFolder}/bin/mingen",
+			"args": [
+				"-d",
+				"/Users/aubin/Dev/Sources/vulkanbox/"
+			],
+			"cwd": "${workspaceFolder}",
+			// "console": "integratedTerminal",
+			"preLaunchTask": "build mac"
+		},
 	]
 }

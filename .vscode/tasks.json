@@ -32,6 +32,21 @@
 			},
 			"group": "build",
 			"problemMatcher": ["$gcc"]
+		},
+		{
+			"label": "build mac",
+			"type": "shell",
+			"command": "ninja -f mac.ninja",
+			"presentation": {
+				"echo": true,
+				"reveal": "silent",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"group": "build",
+			"problemMatcher": ["$gcc"]
 		}
 	]
 }

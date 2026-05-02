@@ -44,6 +44,8 @@ namespace lua
 		uint32_t     sources_size;
 		char const** includes;
 		uint32_t     includes_size;
+		char const** ext_includes;
+		uint32_t     ext_includes_size;
 		char const** compile_options;
 		uint32_t     compile_options_size;
 

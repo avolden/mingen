@@ -13,8 +13,8 @@ extern "C"
 #include <lua/lualib.h>
 }
 
-#include <malloc.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 namespace gen
@@ -98,7 +98,7 @@ namespace gen
 					fwrite("	{\n", 1, 3, file);
 #ifdef _WIN32
 					fprintf(file, "		\"directory\": \"%s\\\\build\",\n", unesc_cwd);
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 					fprintf(file, "		\"directory\": \"%s/build\",\n", unesc_cwd);
 #endif
 					char* unesc_options =
@@ -163,20 +163,9 @@ namespace gen
 
 			for (uint32_t i {0}; i < out.sources_size; ++i)
 			{
-				uint32_t file_ext {str::rfind(out.sources[i].file, ".")};
-				if (file_ext != UINT32_MAX)
-				{
-					objs[i] = tmalloc<char>(file_ext - path_start + 3);
-					strncpy(objs[i], out.sources[i].file + path_start,
-					        file_ext - path_start);
-					strcpy(objs[i] + file_ext - path_start, ".o");
-				}
-				else
-				{
-					objs[i] = tmalloc<char>(strlen(out.sources[i].file) - path_start + 3);
-					strcpy(objs[i], out.sources[i].file + path_start);
-					strcpy(objs[i] + strlen(out.sources[i].file) - path_start, ".o");
-				}
+				objs[i] = tmalloc<char>(strlen(out.sources[i].file) - path_start + 3);
+				strcpy(objs[i], out.sources[i].file + path_start);
+				strcpy(objs[i] + strlen(out.sources[i].file) - path_start, ".o");
 			}
 
 			return objs;
@@ -228,7 +217,7 @@ namespace gen
 			strcpy(ninja_cwd + 2, cwd + 1);
 			tfree(cwd);
 			return ninja_cwd;
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 			return cwd;
 #endif
 		}
@@ -457,7 +446,7 @@ namespace gen
 					int32_t result = snprintf(nullptr, 0, "bin/%s.exe", out.name);
 					build_out = tmalloc<char>(result + 1);
 					snprintf(build_out, result + 1, "bin/%s.exe", out.name);
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 					int32_t result = snprintf(nullptr, 0, "bin/%s", out.name);
 					build_out = tmalloc<char>(result + 1);
 					snprintf(build_out, result + 1, "bin/%s", out.name);
@@ -493,7 +482,7 @@ namespace gen
 					int32_t result = snprintf(nullptr, 0, "bin/%s.dll", out.name);
 					build_out = tmalloc<char>(result + 1);
 					snprintf(build_out, result + 1, "bin/%s.dll", out.name);
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 					int32_t result = snprintf(nullptr, 0, "bin/%s.so", out.name);
 					build_out = tmalloc<char>(result + 1);
 					snprintf(build_out, result, "bin/%s.so", out.name);
@@ -671,7 +660,7 @@ rule copy
 )";
 		char* mingen_path = fs::get_current_executable_path();
 		fprintf(file, cmd_rule, mingen_path);
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 		constexpr char cmd_rule[] =
 			R"(rule cmd
     description = Running ${cmd}

@@ -13,7 +13,7 @@ extern "C"
 #include <win32/io.h>
 #include <win32/process.h>
 #include <win32/threads.h>
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -74,7 +74,7 @@ namespace os
 		tfree(wcmd);
 
 		lua_pushinteger(L, return_code);
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 		char*       working_dir = nullptr;
 		char const* cmd = nullptr;
 

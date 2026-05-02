@@ -4,10 +4,14 @@
 #include <win32/file.h>
 #include <win32/io.h>
 #include <win32/misc.h>
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 #include <dirent.h>
 #include <fcntl.h>
+#if defined(__linux__)
 #include <sys/sendfile.h>
+#elif defined(__APPLE__)
+#include <copyfile.h>
+#endif
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
@@ -260,7 +264,7 @@ namespace fs
 		STACK_CHAR_TO_WCHAR(dst_path, wdst_path);
 		return MoveFileW(wsrc_path, wdst_path) != 0;
 	}
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 	list_dirs_res list_dirs(char const* dir_filter)
 	{
 		uint32_t dirs_count {0};
@@ -354,7 +358,7 @@ namespace fs
 
 	char* get_cwd()
 	{
-		return get_current_dir_name();
+		return getcwd(nullptr, 0);
 	}
 
 	void set_cwd(char const* cwd)
@@ -388,15 +392,19 @@ namespace fs
 		if (fd_in == -1)
 			return false;
 
+#if defined(__linux__)
 		struct stat stat;
 		fstat(fd_in, &stat);
 
 		return sendfile(fd_out, fd_in, nullptr, stat.st_size) != -1;
+#elif defined(__APPLE__)
+		return fcopyfile(fd_in, fd_out, 0, COPYFILE_ALL) >= 0;
+#endif
 	}
 
 	bool delete_file(char const* path)
 	{
-		return remove(path) == 0;
+		return unlink(path) == 0;
 	}
 
 	bool update_last_write_time(char const* path)

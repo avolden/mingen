@@ -1,0 +1,109 @@
+rule cxx
+    description = Compiling ${in}
+    deps = gcc
+    depfile = ${out}.d
+    command = clang++ ${cxxflags} -MMD -MF ${out}.d -c ${in} -o ${out}
+
+rule c
+    description = Compiling ${in}
+    deps = gcc
+    depfile = ${out}.d
+    command = clang ${cflags} -MMD -MF ${out}.d -c ${in} -o ${out}
+
+rule link
+    description = Linking ${out}
+    command = clang++ ${in} -o ${out} -fuse-ld=ld ${lflags}
+
+# default flags
+cxxflags = -g -O2 -isystem"deps" -isystem"/opt/homebrew/include" --std=c++20 -Wno-deprecated-declarations
+cflags = -g -O2 -isystem"deps"
+lflags = -g -O2 -lminizip-ng -L"/opt/homebrew/lib" -lcrypto -lcurl
+
+# asan, uncomment to enable
+# cxxflags = -g -isystem"deps" -isystem"/opt/homebrew/include" --std=c++20 -Wno-deprecated-declarations -fsanitize=address
+# cflags = -g -isystem"deps"
+# lflags = -fsanitize=address -L"/opt/homebrew/lib" -lminizip-ng -lcrypto -lcurl
+
+build obj/fs.o: cxx src/fs.cpp
+build obj/generator.o: cxx src/generator.cpp
+build obj/main.o: cxx src/main.cpp
+build obj/net.o: cxx src/net.cpp
+build obj/os.o: cxx src/os.cpp
+build obj/project.o: cxx src/project.cpp
+build obj/string.o: cxx src/string.cpp
+build obj/lua_env.o: cxx src/lua_env.cpp
+
+build obj/lua/lapi.o: c deps/lua/lapi.c
+build obj/lua/lauxlib.o: c deps/lua/lauxlib.c
+build obj/lua/lbaselib.o: c deps/lua/lbaselib.c
+build obj/lua/lcode.o: c deps/lua/lcode.c
+build obj/lua/lcorolib.o: c deps/lua/lcorolib.c
+build obj/lua/lctype.o: c deps/lua/lctype.c
+build obj/lua/ldblib.o: c deps/lua/ldblib.c
+build obj/lua/ldebug.o: c deps/lua/ldebug.c
+build obj/lua/ldo.o: c deps/lua/ldo.c
+build obj/lua/ldump.o: c deps/lua/ldump.c
+build obj/lua/lfunc.o: c deps/lua/lfunc.c
+build obj/lua/lgc.o: c deps/lua/lgc.c
+build obj/lua/linit.o: c deps/lua/linit.c
+build obj/lua/liolib.o: c deps/lua/liolib.c
+build obj/lua/llex.o: c deps/lua/llex.c
+build obj/lua/lmathlib.o: c deps/lua/lmathlib.c
+build obj/lua/lmem.o: c deps/lua/lmem.c
+build obj/lua/loadlib.o: c deps/lua/loadlib.c
+build obj/lua/lobject.o: c deps/lua/lobject.c
+build obj/lua/lopcodes.o: c deps/lua/lopcodes.c
+build obj/lua/loslib.o: c deps/lua/loslib.c
+build obj/lua/lparser.o: c deps/lua/lparser.c
+build obj/lua/lstate.o: c deps/lua/lstate.c
+build obj/lua/lstring.o: c deps/lua/lstring.c
+build obj/lua/lstrlib.o: c deps/lua/lstrlib.c
+build obj/lua/ltablib.o: c deps/lua/ltablib.c
+build obj/lua/ltable.o: c deps/lua/ltable.c
+build obj/lua/ltm.o: c deps/lua/ltm.c
+build obj/lua/lundump.o: c deps/lua/lundump.c
+build obj/lua/lutf8lib.o: c deps/lua/lutf8lib.c
+build obj/lua/lvm.o: c deps/lua/lvm.c
+build obj/lua/lzio.o: c deps/lua/lzio.c
+
+build bin/mingen: link$
+ obj/fs.o $
+ obj/generator.o $
+ obj/main.o $
+ obj/net.o $
+ obj/os.o $
+ obj/project.o $
+ obj/string.o $
+ obj/lua_env.o $
+ obj/lua/lapi.o $
+ obj/lua/lauxlib.o $
+ obj/lua/lbaselib.o $
+ obj/lua/lcode.o $
+ obj/lua/lcorolib.o $
+ obj/lua/lctype.o $
+ obj/lua/ldblib.o $
+ obj/lua/ldebug.o $
+ obj/lua/ldo.o $
+ obj/lua/ldump.o $
+ obj/lua/lfunc.o $
+ obj/lua/lgc.o $
+ obj/lua/linit.o $
+ obj/lua/liolib.o $
+ obj/lua/llex.o $
+ obj/lua/lmathlib.o $
+ obj/lua/lmem.o $
+ obj/lua/loadlib.o $
+ obj/lua/lobject.o $
+ obj/lua/lopcodes.o $
+ obj/lua/loslib.o $
+ obj/lua/lparser.o $
+ obj/lua/lstate.o $
+ obj/lua/lstring.o $
+ obj/lua/lstrlib.o $
+ obj/lua/ltablib.o $
+ obj/lua/ltable.o $
+ obj/lua/ltm.o $
+ obj/lua/lundump.o $
+ obj/lua/lutf8lib.o $
+ obj/lua/lvm.o $
+ obj/lua/lzio.o

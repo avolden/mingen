@@ -15,7 +15,7 @@ extern "C"
 #ifdef _WIN32
 #include <win32/crypt.h>
 #include <win32/http.h>
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 #include <curl/curl.h>
 #include <openssl/md5.h>
 #endif
@@ -51,7 +51,7 @@ namespace net
 
 			uint32_t hash_object_size;
 			uint8_t* hash_object;
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 			MD5_CTX ctx;
 #endif
 			uint32_t hash_size;
@@ -97,7 +97,7 @@ namespace net
 				return false;
 
 			return true;
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 			hash.hash_size = 32 + 1;
 
 			hash.hash = tmalloc<uint8_t>(hash.hash_size);
@@ -114,7 +114,7 @@ namespace net
 
 #ifdef _WIN32
 			BCryptHashData(hash.hash_h, data, size, 0);
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 			MD5_Update(&hash.ctx, data, size);
 #endif
 		}
@@ -123,7 +123,7 @@ namespace net
 		{
 #ifdef _WIN32
 			BCryptFinishHash(hash.hash_h, hash.hash, hash.hash_size, 0);
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 			MD5_Final(hash.hash, &hash.ctx);
 #endif
 		}
@@ -136,7 +136,7 @@ namespace net
 			tfree(hash.hash);
 		}
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 		struct write_userdata
 		{
 			hash& h;
@@ -225,7 +225,7 @@ namespace net
 
 			if (wcscmp(status, L"200") != 0)
 				return false;
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 			CURL* curl;
 			curl = curl_easy_init();
 			if (!curl)
@@ -270,7 +270,7 @@ namespace net
 					else
 						break;
 				}
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 				write_userdata ud {h, file};
 				curl_easy_setopt(curl, CURLOPT_URL, url);
 				curl_easy_setopt(curl, CURLOPT_WRITEDATA, &ud);
