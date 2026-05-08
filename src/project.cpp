@@ -24,7 +24,8 @@ namespace prj
 				uint32_t link_options_str_capacity {0};
 				for (uint32_t i {0}; i < in.static_library_directories_size; ++i)
 					link_options_str_capacity +=
-						strlen(in.static_library_directories[i]) + 3 /*-L"*/ + 2 /*" */;
+						strlen(in.static_library_directories[i]) + 6 /*-L"../*/ +
+						2 /*" */;
 
 				link_options_str_capacity -= 1;
 				char* link_options = tmalloc<char>(link_options_str_capacity + 1);
@@ -55,8 +56,16 @@ namespace prj
 							trealloc(link_options, link_options_str_capacity + 1);
 					}
 
-					strncpy(link_options + link_options_str_size, "-L\"", 3);
-					link_options_str_size += 3;
+					if (!fs::is_absolute(path))
+					{
+						strncpy(link_options + link_options_str_size, "-L\"../", 6);
+						link_options_str_size += 6;
+					}
+					else
+					{
+						strncpy(link_options + link_options_str_size, "-L\"", 3);
+						link_options_str_size += 3;
+					}
 
 					strncpy(link_options + link_options_str_size, path, len);
 					link_options_str_size += len;

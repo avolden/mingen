@@ -130,6 +130,63 @@ namespace lua
 			return 1;
 		}
 
+		static char* get_script_dir(lua_State* L)
+		{
+			lua_Debug info;
+			lua_getstack(L, 1, &info);
+			lua_getinfo(L, "Sl", &info);
+
+			char const* source = info.short_src;
+			if (!source)
+				return nullptr;
+
+			uint32_t pos = str::rfind(source, "/");
+			uint32_t pos2 = str::rfind(source, "\\");
+			if (pos == UINT32_MAX || (pos2 != UINT32_MAX && pos2 > pos))
+				pos = pos2;
+
+			if (pos == UINT32_MAX)
+			{
+				char* dir = tmalloc<char>(2);
+				dir[0] = '.';
+				dir[1] = '\0';
+				return dir;
+			}
+
+			char* dir = tmalloc<char>(pos + 1);
+			strncpy(dir, source, pos);
+			dir[pos] = '\0';
+			return dir;
+		}
+
+		int32_t script_path_table(lua_State* L)
+		{
+			luaL_argcheck(L, lua_isstring(L, 1), 1, "'string' expected");
+			char const* relative_path = lua_tostring(L, 1);
+
+			char* script_dir = get_script_dir(L);
+			if (!script_dir)
+			{
+				script_dir = tmalloc<char>(2);
+				script_dir[0] = '.';
+				script_dir[1] = '\0';
+			}
+
+			char* resolved_path = fs::canonical(script_dir, relative_path);
+
+			lua_newtable(L);
+			lua_pushstring(L, script_dir);
+			lua_setfield(L, -2, "script_dir");
+			lua_pushstring(L, relative_path);
+			lua_setfield(L, -2, "relative_path");
+			lua_pushstring(L, resolved_path);
+			lua_setfield(L, -2, "path");
+
+			tfree(script_dir);
+			tfree(resolved_path);
+			return 1;
+		}
+
 		int32_t configurations(lua_State* L)
 		{
 			luaL_argcheck(L, lua_istable(L, 1), 1, "'array' expected");
@@ -570,6 +627,8 @@ namespace lua
 		lua_setfield(L, -2, "execute");
 		lua_pushcclosure(L, os::copy_file, 0);
 		lua_setfield(L, -2, "copy_file");
+		lua_pushcclosure(L, os::create_directory, 0);
+		lua_setfield(L, -2, "create_directory");
 
 		lua_newtable(L);
 
@@ -591,6 +650,9 @@ namespace lua
 
 		lua_pushcclosure(L, resolve_path, 0);
 		lua_setfield(L, -2, "resolve_path");
+
+		lua_pushcclosure(L, script_path_table, 0);
+		lua_setfield(L, -2, "script_path_table");
 
 		lua_pushcclosure(L, add_pre_build_cmd, 0);
 		lua_setfield(L, -2, "add_pre_build_cmd");

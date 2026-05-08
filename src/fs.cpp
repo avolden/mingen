@@ -184,10 +184,159 @@ namespace fs
 		return path[1] == ':';
 	}
 
+	char* canonical(char const* path, char const* base)
+	{
+		if (!path)
+			return nullptr;
+
+		bool  absolute = is_absolute(path) || path[0] == '/' || path[0] == '\\';
+		char* combined = nullptr;
+
+		if (absolute)
+		{
+			uint32_t len = static_cast<uint32_t>(strlen(path));
+			combined = tmalloc<char>(len + 1);
+			strcpy(combined, path);
+		}
+		else if (!base)
+		{
+			char*    cwd = get_cwd();
+			uint32_t cwd_len = static_cast<uint32_t>(strlen(cwd));
+			uint32_t path_len = static_cast<uint32_t>(strlen(path));
+			bool     cwd_sep = (cwd[cwd_len - 1] == '/' || cwd[cwd_len - 1] == '\\');
+			combined = tmalloc<char>(cwd_len + (cwd_sep ? 0 : 1) + path_len + 1);
+			strcpy(combined, cwd);
+			if (!cwd_sep)
+				strcat(combined, "/");
+			strcat(combined, path);
+			tfree(cwd);
+		}
+		else
+		{
+			uint32_t base_len = static_cast<uint32_t>(strlen(base));
+			uint32_t path_len = static_cast<uint32_t>(strlen(path));
+			bool     base_sep = (base[base_len - 1] == '/' || base[base_len - 1] == '\\');
+			combined = tmalloc<char>(base_len + (base_sep ? 0 : 1) + path_len + 1);
+			strcpy(combined, base);
+			if (!base_sep)
+				strcat(combined, "/");
+			strcat(combined, path);
+		}
+
+		for (char* p = combined; *p; ++p)
+			if (*p == '\\')
+				*p = '/';
+
+		uint32_t combined_len = static_cast<uint32_t>(strlen(combined));
+
+		bool trailing_slash = combined_len > 0 && combined[combined_len - 1] == '/';
+
+		uint32_t prefix_len = 0;
+		if (combined_len > 1 && combined[0] == '/' && combined[1] == '/')
+			prefix_len = 2;
+		else if (combined_len > 1 && combined[1] == ':')
+			prefix_len = 2 + (combined_len > 2 && combined[2] == '/' ? 1 : 0);
+		else if (combined_len > 0 && combined[0] == '/')
+			prefix_len = 1;
+
+		struct path_fragment
+		{
+			char const* frag;
+			uint32_t    len;
+		};
+
+		path_fragment* fragments = tmalloc<path_fragment>(4);
+		uint32_t       fragments_len = 0;
+		uint32_t       fragments_cap = 4;
+
+		uint32_t i = prefix_len;
+		while (i <= combined_len)
+		{
+			uint32_t start = i;
+			while (i < combined_len && combined[i] != '/')
+				++i;
+			uint32_t frag_len = i - start;
+			if (frag_len > 0)
+			{
+				if (frag_len == 1 && combined[start] == '.')
+				{
+				}
+				else if (frag_len == 2 && combined[start] == '.' &&
+				         combined[start + 1] == '.')
+				{
+					if (fragments_len > 0)
+						--fragments_len;
+					else if (prefix_len == 0)
+					{
+						if (fragments_len == fragments_cap)
+						{
+							fragments_cap *= 2;
+							fragments = trealloc(fragments, fragments_cap);
+						}
+						fragments[fragments_len++] = {combined + start, frag_len};
+					}
+				}
+				else
+				{
+					if (fragments_len == fragments_cap)
+					{
+						fragments_cap *= 2;
+						fragments = trealloc(fragments, fragments_cap);
+					}
+					fragments[fragments_len++] = {combined + start, frag_len};
+				}
+			}
+			++i;
+		}
+
+		uint32_t result_capacity = combined_len + 3;
+		char*    result = tmalloc<char>(result_capacity);
+		uint32_t result_len = 0;
+
+		if (prefix_len > 0)
+		{
+			memcpy(result, combined, prefix_len);
+			result_len = prefix_len;
+		}
+
+		for (uint32_t j = 0; j < fragments_len; ++j)
+		{
+			if (result_len > 0 && result[result_len - 1] != '/')
+				result[result_len++] = '/';
+			memcpy(result + result_len, fragments[j].frag, fragments[j].len);
+			result_len += fragments[j].len;
+		}
+
+		if (result_len == 0)
+		{
+			if (prefix_len > 0)
+			{
+				if (prefix_len == 2 && result[1] == ':')
+					result[result_len++] = '/';
+				else if (prefix_len == 1)
+					result[result_len++] = '/';
+			}
+			else
+			{
+				result[result_len++] = '.';
+			}
+		}
+
+		if (trailing_slash && result_len > 0 && result[result_len - 1] != '/')
+			result[result_len++] = '/';
+
+		result[result_len] = '\0';
+
+		tfree(combined);
+		tfree(fragments);
+		return result;
+	}
+
 	bool create_dir(char const* path)
 	{
 		STACK_CHAR_TO_WCHAR(path, wpath);
-		return CreateDirectoryW(wpath, nullptr);
+		bool res = CreateDirectoryW(wpath, nullptr);
+		return res ? res : GetLastError() == ERROR_ALREADY_EXISTS;
 	}
 
 	bool delete_dir(char const* path)

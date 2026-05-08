@@ -120,6 +120,7 @@ Download an compressed archive from a given URL, and extract it. This is used to
 **Parameters**:
 - String containing the url to download the archive to.
 - String containing the destination directory.
+- Optional string containing the MD5 hash of the archive to download. This allows to prevent a download to compare the exact same archives.
 
 **Returns**: bool indicating if the download and extracts has happened. Used to rebuild libraries if needed for example.
 
@@ -144,3 +145,12 @@ Copies a file to a given destination.
 - String containing the destination file path to copy to.
 
 **Returns**: bool indicating if the copy succeeded or not.
+
+#### `os.create_directory()`
+Creates a directory.
+
+**Parameters**:
+- String containing the directory path to create.
+- (Optional) bool to create the directory recursively or not. Defaults to `true`.
+
+**Returns**: bool indicating if the creation succeeded or not.

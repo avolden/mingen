@@ -65,6 +65,12 @@ namespace fs
 	/// @return false Path is relative.
 	bool is_absolute(char const* path);
 
+	/// @brief Converts a path to a canonical absolute path.
+	/// @param path The path to normalize.
+	/// @param base Base path. Leaving it empty will take the current working directory.
+	/// @return char* Canonical absolute path.
+	char* canonical(char const* path, char const* base = nullptr);
+
 	/// @brief Creates a directory. Doesn't create directories recursively.
 	/// @param path Path to the directory to create.
 	/// @return true Directory created.

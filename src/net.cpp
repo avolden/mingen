@@ -249,7 +249,7 @@ namespace net
 				// 	claimed_size = wcstol(content_length, NULL, 10);
 				// }
 
-				uint8_t  response_buffer[4096];
+				uint8_t  response_buffer[4096 * 4];
 				DWORD    bytes_available;
 				uint32_t total_read = 0;
 				while (
@@ -259,7 +259,7 @@ namespace net
 					DWORD size_read = 0;
 
 					uint32_t return_code =
-						InternetReadFile(request, response_buffer, 4096, &size_read);
+						InternetReadFile(request, response_buffer, 4096 * 4, &size_read);
 
 					if (return_code && size_read > 0)
 					{
@@ -310,15 +310,34 @@ namespace net
 
 			return hex_str;
 		}
+
+		int32_t hex_to_bin(char const* hex_str, uint8_t* out_data, int32_t out_len)
+		{
+			size_t hex_len = strlen(hex_str);
+			if (hex_len % 2 != 0)
+				return -1;
+
+			size_t num_bytes = hex_len / 2;
+			if (num_bytes > out_len)
+				return -1;
+
+			for (size_t i = 0; i < num_bytes; i++)
+				if (sscanf(hex_str + i * 2, "%2hhx", &out_data[i]) != 1)
+					return -1;
+			return (int)num_bytes;
+		}
 	} // namespace
 
 	int32_t download(lua_State* L)
 	{
 		luaL_argcheck(L, lua_isstring(L, 1), 1, "'string' expected");
 		luaL_argcheck(L, lua_isstring(L, 2), 2, "'string' expected");
+		if (lua_gettop(L) == 3)
+			luaL_argcheck(L, lua_isstring(L, 3), 3, "'string' expected");
 
 		char const* url = lua_tostring(L, 1);
 		char const* lua_dest = lua_tostring(L, 2);
+		char const* lua_hash = lua_gettop(L) == 3 ? lua_tostring(L, 3) : nullptr;
 		uint32_t    dest_len = strlen(lua_dest);
 		bool        trailing_slash = str::ends_with(lua_dest, "/");
 		char*       dest = nullptr;
@@ -366,16 +385,55 @@ namespace net
 
 		strcpy(zip_dest + dest_len + !trailing_slash + 10, url + archive_pos);
 
-		hash h;
-		if (!get_archive(url, zip_dest, h))
-			luaL_error(L, "Failed to download '%s'", url);
-
 		char* meta_dest =
 			tmalloc<char>(dest_len + !trailing_slash + 14 /*.dl-cache/meta*/ + 1);
 		strcpy(meta_dest, dest);
 		if (!trailing_slash)
 			meta_dest[dest_len] = '/';
 		strcpy(meta_dest + dest_len + !trailing_slash, ".dl-cache/meta");
+		if (lua_hash)
+		{
+			FILE* meta_file = fopen(meta_dest, "r");
+			if (meta_file)
+			{
+				uint8_t buf[128];
+				size_t  read = fread(buf, 1, 128, meta_file);
+				fclose(meta_file);
+
+				bool valid = true;
+				if (read != strlen(lua_hash))
+					valid = false;
+				else
+				{
+					for (size_t i = 0; i < strlen(lua_hash); ++i)
+					{
+						char meta_char = buf[i];
+						char lua_char = lua_hash[i];
+						if (lua_char >= 'A' && lua_char <= 'Z')
+							lua_char += 0x20;
+						if (meta_char >= 'A' && meta_char <= 'Z')
+							meta_char += 0x20;
+
+						if (lua_char != meta_char)
+						{
+							valid = false;
+							break;
+						}
+					}
+				}
+
+				if (valid)
+				{
+					lua_pushboolean(L, false);
+					return 1;
+				}
+			}
+		}
+
+		hash h;
+		if (!get_archive(url, zip_dest, h))
+			luaL_error(L, "Failed to download '%s'", url);
+
 		char* checksum_str = bin_to_hex(h.hash, h.hash_size);
 		hash_free(h);
 
