@@ -136,7 +136,7 @@ namespace lua
 			lua_getstack(L, 1, &info);
 			lua_getinfo(L, "Sl", &info);
 
-			char const* source = info.short_src;
+			char const* source = info.source;
 			if (!source)
 				return nullptr;
 
@@ -601,7 +601,7 @@ namespace lua
 			lua_getstack(L, 1, &info);
 			lua_getinfo(L, "Sl", &info);
 
-			lua_pushboolean(L, strcmp(g.file, info.short_src) == 0);
+			lua_pushboolean(L, strcmp(g.file, info.source + 1) == 0);
 
 			return 1;
 		}
@@ -731,20 +731,19 @@ namespace lua
 		lua_getinfo(L, "Sl", &info);
 
 		uint32_t pos = 0;
-		if (str::starts_with(info.short_src, "./") ||
-		    str::starts_with(info.short_src, ".\\"))
-			pos = 2;
+		if (str::starts_with(info.source, "@./") || str::starts_with(info.source, "@.\\"))
+			pos = 3;
 		else
 		{
 			char* cwd = fs::get_cwd();
-			if (str::starts_with(info.short_src, cwd))
+			if (str::starts_with(info.source, cwd))
 			{
 				if (str::ends_with(cwd, "/") || str::ends_with(cwd, "\\"))
 					pos = strlen(cwd);
 				else
 					pos = strlen(cwd) + 1;
 			}
-			else if (str::find(info.short_src, "/"))
+			else if (str::find(info.source, "/"))
 			{
 				char* new_path = tmalloc<char>(len + 1);
 				strncpy(new_path, path, len);
@@ -774,11 +773,14 @@ namespace lua
 		uint32_t  path_fragments_len = 0;
 		uint32_t  path_fragments_cap = 4;
 
-		uint32_t find_pos = str::find(info.short_src + pos, "/");
-		uint32_t src_len {static_cast<uint32_t>(strlen(info.short_src))};
+		uint32_t find_pos = str::find(info.source + pos, "/");
+		if (find_pos == UINT32_MAX)
+			find_pos = str::find(info.source + pos, "\\");
+
+		uint32_t src_len {static_cast<uint32_t>(strlen(info.source))};
 		while (find_pos != UINT32_MAX && (find_pos + pos < src_len))
 		{
-			str_view frag {info.short_src + pos, find_pos + 1};
+			str_view frag {info.source + pos, find_pos + 1};
 			if (path_fragments_len == path_fragments_cap)
 			{
 				path_fragments_cap *= 2;
@@ -789,7 +791,9 @@ namespace lua
 			++path_fragments_len;
 
 			pos += find_pos + 1;
-			find_pos = str::find(info.short_src + pos, "/");
+			find_pos = str::find(info.source + pos, "/");
+			if (find_pos == UINT32_MAX)
+				find_pos = str::find(info.source + pos, "\\");
 		}
 
 		if (str::starts_with(path, "./") || str::starts_with(path, ".\\"))
@@ -899,20 +903,19 @@ namespace lua
 		lua_getinfo(L, "Sl", &info);
 
 		uint32_t pos = 0;
-		if (str::starts_with(info.short_src, "./") ||
-		    str::starts_with(info.short_src, ".\\"))
-			pos = 2;
+		if (str::starts_with(info.source, "@./") || str::starts_with(info.source, "@.\\"))
+			pos = 3;
 		else
 		{
 			char* cwd = fs::get_cwd();
-			if (str::starts_with(info.short_src, cwd))
+			if (str::starts_with(info.source, cwd))
 			{
 				if (str::ends_with(cwd, "/") || str::ends_with(cwd, "\\"))
 					pos = strlen(cwd);
 				else
 					pos = strlen(cwd) + 1;
 			}
-			else if (str::find(info.short_src, "/"))
+			else if (str::find(info.source, "/"))
 			{
 				char* new_path = tmalloc<char>(len + 1);
 				strncpy(new_path, path, len);
@@ -939,8 +942,8 @@ namespace lua
 		uint32_t current_script_dir_count = 0;
 		uint32_t path_dir_count = 0;
 
-		for (uint32_t i {pos}; i < strlen(info.short_src); ++i)
-			if (info.short_src[i] == '/' || info.short_src[i] == '\\')
+		for (uint32_t i {pos}; i < strlen(info.source); ++i)
+			if (info.source[i] == '/' || info.source[i] == '\\')
 				++current_script_dir_count;
 
 		while (current_script_dir_count > 0)
@@ -955,15 +958,15 @@ namespace lua
 			strncpy(res_path + res_path_size, "../", 3);
 			res_path_size += 3;
 			--current_script_dir_count;
-			uint32_t find_pos = str::find(info.short_src + pos, "/");
+			uint32_t find_pos = str::find(info.source + pos, "/");
 			if (find_pos == UINT32_MAX)
-				find_pos = str::find(info.short_src + pos, "\\");
+				find_pos = str::find(info.source + pos, "\\");
 			pos += find_pos + 1;
 		}
 
-		uint32_t find_pos = str::rfind(info.short_src + pos, "/");
+		uint32_t find_pos = str::rfind(info.source + pos, "/");
 		if (find_pos == UINT32_MAX)
-			find_pos = str::rfind(info.short_src + pos, "\\");
+			find_pos = str::rfind(info.source + pos, "\\");
 
 		if (find_pos != UINT32_MAX)
 		{
@@ -974,7 +977,7 @@ namespace lua
 				res_path = trealloc(res_path, res_path_capacity + 1);
 			}
 
-			strncpy(res_path + res_path_size, info.short_src + pos, find_pos + 1);
+			strncpy(res_path + res_path_size, info.source + pos, find_pos + 1);
 			res_path_size += find_pos + 1;
 		}
 		else if (res_path_capacity < res_path_size + len)
