@@ -98,7 +98,7 @@ namespace net
 
 			return true;
 #elif defined(__linux__) || defined(__APPLE__)
-			hash.hash_size = 32 + 1;
+			hash.hash_size = 16 + 1;
 
 			hash.hash = tmalloc<uint8_t>(hash.hash_size);
 			memset(hash.hash, 0, hash.hash_size);

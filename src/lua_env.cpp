@@ -161,15 +161,15 @@ namespace lua
 
 		int32_t script_path_table(lua_State* L)
 		{
-			luaL_argcheck(L, lua_isstring(L, 1), 1, "'string' expected");
+			/*luaL_argcheck(L, lua_isstring(L, 1), 1, "'string' expected");
 			char const* relative_path = lua_tostring(L, 1);
 
 			char* script_dir = get_script_dir(L);
 			if (!script_dir)
 			{
-				script_dir = tmalloc<char>(2);
-				script_dir[0] = '.';
-				script_dir[1] = '\0';
+			    script_dir = tmalloc<char>(2);
+			    script_dir[0] = '.';
+			    script_dir[1] = '\0';
 			}
 
 			char* resolved_path = fs::canonical(script_dir, relative_path);
@@ -183,8 +183,8 @@ namespace lua
 			lua_setfield(L, -2, "path");
 
 			tfree(script_dir);
-			tfree(resolved_path);
-			return 1;
+			tfree(resolved_path);*/
+			return 0;
 		}
 
 		int32_t configurations(lua_State* L)
