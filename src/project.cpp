@@ -125,7 +125,7 @@ namespace prj
 			if (out.sources_capacity < out.sources_size + files.size)
 			{
 				if (!out.sources_capacity)
-					out.sources_capacity = 1;
+					out.sources_capacity = files.size;
 				else
 					out.sources_capacity *= 2;
 				lua::output::source* new_sources = trealloc(
@@ -214,7 +214,7 @@ namespace prj
 					if (out.sources_capacity < out.sources_size + files.size)
 					{
 						if (!out.sources_capacity)
-							out.sources_capacity = 1;
+							out.sources_capacity = files.size;
 						else
 							out.sources_capacity *= 2;
 						lua::output::source* new_sources =
