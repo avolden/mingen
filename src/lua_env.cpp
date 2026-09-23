@@ -908,15 +908,16 @@ namespace lua
 			pos = 3;
 		else
 		{
+			pos = 1;
 			char* cwd = fs::get_cwd();
-			if (str::starts_with(info.source, cwd))
+			if (str::starts_with(info.source + pos, cwd))
 			{
 				if (str::ends_with(cwd, "/") || str::ends_with(cwd, "\\"))
-					pos = strlen(cwd);
+					pos += strlen(cwd);
 				else
-					pos = strlen(cwd) + 1;
+					pos += strlen(cwd) + 1;
 			}
-			else if (str::find(info.source, "/"))
+			else if (str::find(info.source + 1, "/"))
 			{
 				char* new_path = tmalloc<char>(len + 1);
 				strncpy(new_path, path, len);
